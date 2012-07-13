@@ -7,12 +7,15 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "FEAppDelegate.h"
+#import "Reachability.h"
 
 @interface FEListTableViewController : UIViewController <UITableViewDataSource, UITableViewDelegate> {
     
     IBOutlet UITableView *theTableView;
     IBOutlet UIActivityIndicatorView *ind;
     NSArray *videos;
+    FEAppDelegate *app;
 }
 
 

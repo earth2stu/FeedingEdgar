@@ -7,9 +7,15 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <AVFoundation/AVFoundation.h>
 
-@interface FEHomeViewController : UIViewController
+@interface FEHomeViewController : UIViewController <UIAlertViewDelegate> {
+    UIAlertView *alert;
+    AVAudioPlayer *track;
+}
 
 - (IBAction)showVideoList:(id)sender;
 - (IBAction)recordGirl:(id)sender;
+- (void)playSound;
+
 @end

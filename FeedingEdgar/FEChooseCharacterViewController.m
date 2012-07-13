@@ -8,6 +8,7 @@
 
 #import "FEChooseCharacterViewController.h"
 #import "FEViewController.h"
+#import "FEAppDelegate.h"
 
 @implementation FEChooseCharacterViewController
 
@@ -44,6 +45,13 @@
     [super viewDidLoad];
 }
 */
+
+- (void)viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+    
+    FEAppDelegate *app = (FEAppDelegate*)[[UIApplication sharedApplication] delegate];
+    //[app.track play];
+}
 
 - (void)viewDidUnload
 {

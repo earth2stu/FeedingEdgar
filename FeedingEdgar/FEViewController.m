@@ -22,10 +22,12 @@
 - (void)done;
 - (void) processVideo:(NSURL*)inputURL toFile:(NSURL*)outputURL;
 - (void)addWaitingView;
+- (void)setupAssetWriterInput;
 
 @end
 
 @implementation FEViewController
+@synthesize recordLight;
 
 @synthesize isGuy;
 
@@ -83,19 +85,29 @@
     captureSession = [[AVCaptureSession alloc] init];
     //captureSession.sessionPreset = AVCaptureSessionPreset640x480;
     
-    captureSession.sessionPreset = AVCaptureSessionPreset1280x720;
+     
+    
+    
     
     
     // SET UP CAMERA AS CAPTUREDEVICE
     
     AVCaptureDevice *captureDevice = [self backFacingCamera];
     
-    NSError *error = nil;
-    BOOL didLock = [captureDevice lockForConfiguration:&error];
+    is1280OK = [captureDevice supportsAVCaptureSessionPreset:AVCaptureSessionPreset1280x720];
     
-    if (didLock) {
-        [captureDevice setFocusMode:AVCaptureFocusModeAutoFocus];
+    if (is1280OK) {
+        captureSession.sessionPreset = AVCaptureSessionPreset1280x720;
+    } else {
+        captureSession.sessionPreset = AVCaptureSessionPreset640x480;
     }
+    
+    NSError *error = nil;
+//    BOOL didLock = [captureDevice lockForConfiguration:&error];
+    
+//    if (didLock) {
+//        [captureDevice setFocusMode:AVCaptureFocusModeAutoFocus];
+//    }
     
     
     // SETUP CAPTUREDEVICEINPUT WITH CAPTUREDEVICE AS THE INPUT DEVICE
@@ -123,7 +135,7 @@
     [outputSettings setObject: [NSNumber numberWithInt:kCVPixelFormatType_32BGRA] forKey:(NSString*)
      kCVPixelBufferPixelFormatTypeKey];
 
-    videoData.alwaysDiscardsLateVideoFrames = YES;
+    videoData.alwaysDiscardsLateVideoFrames = NO;
     //videoData.
     //videoData.minFrameDuration = CMTimeMake(1, 15);
     
@@ -147,9 +159,15 @@
     
     AVCaptureVideoPreviewLayer *previewLayer = [AVCaptureVideoPreviewLayer layerWithSession:captureSession]; 
     //previewLayer.frame = self.view.layer.bounds; 
-    previewLayer.frame = CGRectMake(0, 25, 480, 270);
+    
+    
+    previewLayer.frame = CGRectMake(40, 50, 400, 225);
+    
+    
+    //previewLayer.frame = CGRectMake(0, 25, 480, 270);
     previewLayer.orientation = AVCaptureVideoOrientationLandscapeLeft;
     previewLayer.videoGravity = AVLayerVideoGravityResizeAspect; 
+    //previewLayer.opacity = 0.8f;
     //[self.view.layer addSublayer:previewLayer];
     [self.view.layer insertSublayer:previewLayer below:startButton.layer];
     
@@ -185,11 +203,12 @@
     
     */
     
+    [captureSession startRunning];
     
     
     // SET ALL THE SETTINGS TO WRITE THE VIDEO
     
-    
+    /*
     NSDictionary *codecSettings = [NSDictionary dictionaryWithObjectsAndKeys:
                                    //[NSNumber numberWithInt:1600000], AVVideoAverageBitRateKey,
                                    //[NSNumber numberWithInt:12],AVVideoMaxKeyFrameIntervalKey,
@@ -215,7 +234,7 @@
     
     
     
-    /* to prepare for output; I'll output 640x480 in H.264, via an asset writer */
+    /* to prepare for output; I'll output 640x480 in H.264, via an asset writer *
     NSDictionary *assettSettings =
     [NSDictionary dictionaryWithObjectsAndKeys:
      
@@ -250,13 +269,14 @@
       [NSNumber numberWithInt:kCVPixelFormatType_32BGRA], 
       kCVPixelBufferPixelFormatTypeKey,
       nil]];
-    */
+    *
     
     
     [captureSession startRunning];
     //[captureSession startRunning];
     
     
+    */
     
     //NSLog(@"assign input to assetwriter1");
     
@@ -346,9 +366,24 @@
      * 240 - 74 (half of 148) = 166
      */
     
+    /*
+     * 16 x 9 at 400 wide = 225 high
+     * 50 from the top + 225 + 45 at the bottom = 320
+     * 420 out of 720 = 58.333%
+     * 58.333% of 225 = 131 (height) (122 width)
+     * half of which is 65
+     * middle of vid is 162 - 65 = 97 (y val)
+     * 240 - 61 (half of 122) = 179
+     */
+    
+    
+    
+    
     animLayer = [CALayer layer];
     // animLayer.frame = CGRectMake(173, 93, 135 , 135); // for 360
-    animLayer.frame = CGRectMake(166, 81, 148, 158);
+    //animLayer.frame = CGRectMake(166, 81, 148, 158);
+    animLayer.frame = CGRectMake(179, 97, 122, 131);
+    
     [self.view.layer addSublayer:animLayer];
     
     CAKeyframeAnimation *animation = [CAKeyframeAnimation animationWithKeyPath: @"contents"];
@@ -396,14 +431,66 @@
     
 }
 
+- (void)setupAssetWriterInput {
+    NSDictionary *codecSettings = [NSDictionary dictionaryWithObjectsAndKeys:
+                                   //[NSNumber numberWithInt:1600000], AVVideoAverageBitRateKey,
+                                   //[NSNumber numberWithInt:12],AVVideoMaxKeyFrameIntervalKey,
+                                   //videoCleanApertureSettings, AVVideoCleanApertureKey,
+                                   //videoAspectRatioSettings, AVVideoPixelAspectRatioKey,
+                                   //AVVideoProfileLevelH264Main30, AVVideoProfileLevelKey,
+                                   nil];
+    
+    
+    
+    
+    
+    //NSString *targetDevice = [[UIDevice currentDevice] model];
+    
+    NSDictionary *videoSettings = [NSDictionary dictionaryWithObjectsAndKeys:
+                                   AVVideoCodecH264, AVVideoCodecKey,
+                                   codecSettings,AVVideoCompressionPropertiesKey,
+                                   [NSNumber numberWithInt:1280], AVVideoWidthKey,
+                                   [NSNumber numberWithInt:720], AVVideoHeightKey,
+                                   nil];
+    
+    
+    
+    
+    
+    /* to prepare for output; I'll output 640x480 in H.264, via an asset writer */
+     NSDictionary *assettSettings =
+     [NSDictionary dictionaryWithObjectsAndKeys:
+     
+     [NSNumber numberWithInt:1280], AVVideoWidthKey,
+     [NSNumber numberWithInt:720], AVVideoHeightKey,
+     AVVideoCodecH264, AVVideoCodecKey,
+     
+     nil];
+     
+     // CREATE THE ASSETWRITER WITH THE DEFINED SETTINGS
+     
+     assetWriterInput = [AVAssetWriterInput 
+     assetWriterInputWithMediaType:AVMediaTypeVideo
+     outputSettings:videoSettings];
+     
+     
+     
+     assetWriterInput.expectsMediaDataInRealTime = YES;
+}
+
 -(IBAction)startSendingVideo:(id)sender {
     
-    [jumpButton setHidden:NO];
+    frameNumber = 0;
+    
+//    [jumpButton setHidden:NO];
     [menuButton setHidden:YES];
     [startButton setHidden:YES];
     [stopButton setHidden:NO];
+    [recordLight setHidden:NO];
     
     [captureSession addOutput:videoData];
+    
+    [self setupAssetWriterInput];
     
     pixelBufferAdaptor =
     [[AVAssetWriterInputPixelBufferAdaptor alloc] 
@@ -425,6 +512,7 @@
     NSError *error = nil;
     [[NSFileManager defaultManager] removeItemAtPath:foofile error:&error];
     
+    
     assetWriter = [[AVAssetWriter alloc]
                    initWithURL:fileOut
                    fileType:AVFileTypeQuickTimeMovie
@@ -436,7 +524,7 @@
     [assetWriter startWriting];
     //[assetWriter startSessionAtSourceTime:kCMTimeZero];
     
-    firstFrameWallClockTime = CFAbsoluteTimeGetCurrent();
+    firstFrameWallClockTime = CACurrentMediaTime();
     [assetWriter startSessionAtSourceTime: CMTimeMake(0, TIME_SCALE)];
     
     //[captureSession startRunning];
@@ -460,6 +548,7 @@
     [menuButton setHidden:YES];
     [stopButton setHidden:YES];
     [startButton setHidden:YES];
+    [recordLight setHidden:YES];
     
     [animLayer removeFromSuperlayer];
     
@@ -514,7 +603,10 @@
     
     [assetWriter finishWriting];
     
+    assetWriterInput = nil;
+    
     assetWriter = nil;
+    
     
     pixelBufferAdaptor = nil;
     
@@ -532,12 +624,20 @@
     NSString* outFile = [documentsPath stringByAppendingPathComponent:uniqueOut];
     NSURL *fileOut = [NSURL fileURLWithPath:outFile];
     
+    /*
     pfVideo = [PFObject objectWithClassName:@"Video"];
     [pfVideo setObject:[PFUser currentUser] forKey:@"user"];
     [pfVideo setValue:currentVideo.guid forKey:@"guid"];
     //[vid setValue:currentVideo.title forKey:@"title"];
     //[vid setValue:currentVideo.timestamp forKey:@"timestamp"];
     [pfVideo saveEventually];
+    */
+    
+    FEAppDelegate *app = (FEAppDelegate*)[[UIApplication sharedApplication] delegate];
+    [app.videos addObject:currentVideo];
+    [app saveDataToDisk];
+    
+    
     
     
     [self processVideo:fileIn toFile:fileOut];
@@ -594,8 +694,11 @@
     //CMTime presentationTime = CMTimeMake(frameNumber, 15);
     
     
+    
+    
+    
     // calculate the time
-    CFAbsoluteTime thisFrameWallClockTime = CFAbsoluteTimeGetCurrent();
+    CFAbsoluteTime thisFrameWallClockTime = CACurrentMediaTime();
     CFTimeInterval elapsedTime = thisFrameWallClockTime - firstFrameWallClockTime;
     CMTime presentationTime =  CMTimeMake (elapsedTime * TIME_SCALE, TIME_SCALE);
     
@@ -777,6 +880,7 @@
 
 - (void)viewDidUnload
 {
+    [self setRecordLight:nil];
     [super viewDidUnload];
     // Release any retained subviews of the main view.
     // e.g. self.myOutlet = nil;
@@ -790,6 +894,11 @@
 - (void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
+    
+    //FEAppDelegate *app = (FEAppDelegate*)[[UIApplication sharedApplication] delegate];
+    //[app.track play];
+    //app.track.volume = 1.0f;
+    
 }
 
 - (void)viewWillDisappear:(BOOL)animated
@@ -800,6 +909,8 @@
 - (void)viewDidDisappear:(BOOL)animated
 {
 	[super viewDidDisappear:animated];
+    
+    
 }
 
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
@@ -929,12 +1040,19 @@
                     
                     int animFrame = (frameNumber % 25);
                     
+                    NSLog(@"frame num = %i", animFrame);
+                    
+                    int framePart = ((presentationTime.value % presentationTime.timescale) / (presentationTime.timescale / 25));
+                    
+                    NSLog(@"framepart = %i", framePart);
+                    
+                    
                     
                     //NSObject *o = [runImages objectAtIndex:animFrame];
                     
                     
                     
-                    CGImageRef overlayRef = (__bridge CGImageRef)[runImages objectAtIndex:animFrame];
+                    CGImageRef overlayRef = (__bridge CGImageRef)[runImages objectAtIndex:framePart];
                     
                                         
                     //[[runImages objectAtIndex:animFrame] getValue:&overlayRef ];
@@ -964,14 +1082,25 @@
                     //CGContextRotateCTM(newContext, M_PI);
                     
                     if (frameNumber == 50.0) {
+                        NSLog(@"writing the image !!!!!!!!!!!!!!!!!");
                         //currentVideo.thumbnail = [UIImage imageWithCGImage:overlayRef];
                         CGImageRef imgRef = CGBitmapContextCreateImage(newContext);
                         UIImage *fullSize = [UIImage imageWithCGImage:imgRef];
                         UIGraphicsBeginImageContextWithOptions(CGSizeMake(128, 72), NO, 0.0);
                         [fullSize drawInRect:CGRectMake(0, 0, 128, 72)];
-                        UIImage *newImage = UIGraphicsGetImageFromCurrentImageContext();    
+                        UIImage *newImage = UIGraphicsGetImageFromCurrentImageContext();  
+                        UIImage *rotatedImage = [newImage imageRotatedByDegrees:180];
                         UIGraphicsEndImageContext();
-                        currentVideo.thumbnail = newImage;
+                        
+                        NSString* documentsPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+                        NSString *uniqueOut = [NSString stringWithFormat:@"%@.png", currentVideo.guid];
+                        NSString* outFile = [documentsPath stringByAppendingPathComponent:uniqueOut];
+                        
+                        NSData *imageData = UIImagePNGRepresentation(rotatedImage);
+                        [imageData writeToFile:outFile atomically:YES];
+                        
+                        
+                        currentVideo.thumbnail = rotatedImage;
                     }
 
                     
@@ -1013,8 +1142,8 @@
 
 - (void)done {
     
-    [pfVideo setObject:UIImagePNGRepresentation(currentVideo.thumbnail)  forKey:@"thumbnail"];
-    [pfVideo saveEventually];
+    //[pfVideo setObject:UIImagePNGRepresentation(currentVideo.thumbnail)  forKey:@"thumbnail"];
+    //[pfVideo saveEventually];
     
     [self performSelectorOnMainThread:@selector(removeWaitingView) withObject:nil waitUntilDone:YES];
 }

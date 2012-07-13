@@ -11,11 +11,12 @@
 @implementation Video
 
 
-@synthesize title, timestamp, guid, thumbnail;
+@synthesize title, timestamp, guid, thumbnail, isUploaded, url;
 
 - (id)init {
     if (self = [super init]) {
         self.guid = [self uuid];
+        isUploaded = NO;
     }
     return self;
 }
@@ -26,7 +27,7 @@
         self.title = [coder decodeObjectForKey:@"title"];
         self.timestamp = [coder decodeObjectForKey:@"timestamp"];
         self.guid = [coder decodeObjectForKey:@"guid"];
-        
+        self.isUploaded = [coder decodeBoolForKey:@"isUploaded"];
     }
     return self;
 }
@@ -36,7 +37,7 @@
     [coder encodeObject:self.title forKey:@"title"];
     [coder encodeObject:self.timestamp forKey:@"timestamp"];
     [coder encodeObject:self.guid forKey:@"guid"];
-    
+    [coder encodeBool:self.isUploaded forKey:@"isUploaded"];
 }
 
 -(NSString *)description {

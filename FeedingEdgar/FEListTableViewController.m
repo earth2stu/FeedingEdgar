@@ -10,6 +10,7 @@
 #import "Video.h"
 #import <Parse/Parse.h>
 #import "VideoTableViewCell.h"
+#import "FEAppDelegate.h"
 
 @implementation FEListTableViewController
 
@@ -39,7 +40,9 @@
 {
     [super viewDidLoad];
     
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(reloadTable:) name:@"reloadTable" object:nil];
     
+    /*
     PFQuery *query = [PFQuery queryWithClassName:@"Video"];
     [query whereKey:@"user" equalTo:[PFUser currentUser]];
     
@@ -49,6 +52,41 @@
         [theTableView reloadData];
         [ind stopAnimating];
     }];
+    */
+    
+    app = (FEAppDelegate*)[[UIApplication sharedApplication] delegate];
+    [app loadDataFromDisk];
+    videos = app.videos;
+    
+    
+    
+        
+    // allocate a reachability object
+    Reachability* reach = [Reachability reachabilityWithHostname:@"www.google.com"];
+    
+    // set the blocks 
+    reach.reachableBlock = ^(Reachability*reach)
+    {
+        NSLog(@"REACHABLE!");
+        
+        if (reach.isReachableViaWiFi) {
+            app.isWifi = YES;
+            NSLog(@"WIFI");
+        } else {
+            app.isWifi = NO;
+            NSLog(@"No WIFI");
+        }
+        
+    };
+    
+    reach.unreachableBlock = ^(Reachability*reach)
+    {
+        app.isWifi = NO;
+        NSLog(@"UNREACHABLE!");
+    };
+    
+    // start the notifier which will cause the reachability object to retain itself!
+    [reach startNotifier];
     
     
     // Uncomment the following line to preserve selection between presentations.
@@ -61,6 +99,8 @@
 - (void)viewDidUnload
 {
     [super viewDidUnload];
+    
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
     // Release any retained subviews of the main view.
     // e.g. self.myOutlet = nil;
 }
@@ -73,6 +113,13 @@
 - (void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
+    
+    
+    
+    //[app.track play];
+    
+    
+    
 }
 
 - (void)viewWillDisappear:(BOOL)animated
@@ -105,7 +152,8 @@
 #warning Incomplete method implementation.
     // Return the number of rows in the section.
     if (videos) {
-        return [videos count];
+        //return [videos count];
+        return [app.videos count];
     } else {
         return 0;
     }
@@ -120,15 +168,36 @@
         cell = [[VideoTableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
     }
     
-    PFObject *video = [videos objectAtIndex:indexPath.row];
+    Video *video = [videos objectAtIndex:indexPath.row];
     
     cell.video = video;
     //cell.textLabel.text = [video valueForKey:@"guid"];
     
-    NSData *imageData = [video objectForKey:@"thumbnail"];
-    UIImage *image = [UIImage imageWithData:imageData];
+    //NSData *imageData = video.thumbnail;
+    //[video objectForKey:@"thumbnail"];
+    //UIImage *image = [UIImage imageWithData:imageData];
     
-    [cell.thumbView setImage:image forState:UIControlStateNormal];
+    NSString* documentsPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+    NSString *uniqueOut = [NSString stringWithFormat:@"%@.png", video.guid];
+    NSString* outFile = [documentsPath stringByAppendingPathComponent:uniqueOut];
+    
+    UIImage *image = [UIImage imageWithContentsOfFile:outFile];
+    
+    //[cell.thumbView setImage:image forState:UIControlStateNormal];
+    
+    [cell.thumbView setBackgroundImage:image forState:UIControlStateNormal];
+    
+    [cell.sendHQButton setEnabled:!video.isUploaded];
+    
+    
+    
+    //NSData *imageData = UIImagePNGRepresentation(rotatedImage);
+    //[imageData writeToFile:outFile atomically:YES];
+
+    
+    
+    
+    //[cell.thumbView setImage:video.thumbnail forState:UIControlStateNormal];
     cell.tag = indexPath.row;
     
     //cell.thumbView setImage:image];
@@ -208,6 +277,10 @@
 
 - (IBAction)backToMenu:(id)sender {
     [self.navigationController popViewControllerAnimated:YES];
+}
+
+- (void)reloadTable:(NSNotification*)notification {
+    [theTableView reloadData];
 }
 
 @end

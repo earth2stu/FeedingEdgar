@@ -7,9 +7,19 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <AVFoundation/AVFoundation.h>
+#import <AudioToolbox/AudioToolbox.h>
 
-@interface FEAppDelegate : UIResponder <UIApplicationDelegate> {
+@interface FEAppDelegate : UIResponder <UIApplicationDelegate, AVAudioPlayerDelegate> {
     NSMutableArray *videos;
+    //AVAudioPlayer *track;
+    
+    
+    AVAudioPlayer *_backgroundMusicPlayer;
+    BOOL _backgroundMusicPlaying;
+    BOOL _backgroundMusicInterrupted;
+    UInt32 _otherMusicIsPlaying;
+    
 }
 
 @property (strong, nonatomic) UIWindow *window;
@@ -20,11 +30,17 @@
 @property (strong, nonatomic) NSMutableArray *girlJump;
 @property (strong, nonatomic) NSMutableArray *boyRun;
 @property (strong, nonatomic) NSMutableArray *boyJump;
+@property (assign) BOOL isWifi;
 
+@property (strong, nonatomic) AVAudioPlayer *backgroundMusicPlayer;
+
+//@property (strong, nonatomic) AVAudioPlayer *track;
 
 - (NSString*)uuid;
 - (void) saveDataToDisk;
 - (void) loadDataFromDisk;
+- (void)playSound;
+- (void)tryPlayMusic;
 
 
 @end

@@ -10,6 +10,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import "Video.h"
 #import <Parse/Parse.h>
+#import "UIImage-Extensions.h"
 
 @interface FEViewController : UIViewController <AVCaptureVideoDataOutputSampleBufferDelegate> {
 
@@ -52,6 +53,9 @@
     UIView *coverView;
     PFObject *pfVideo;
     
+    BOOL is1280OK;
+    
+    
 }
 
 @property (assign) BOOL isGuy;
@@ -76,6 +80,7 @@
 
 
 // Processing stuff
+@property (strong, nonatomic) IBOutlet UIImageView *recordLight;
 
 @property (nonatomic, retain) AVAssetWriter *assetWriter2;
 @property (nonatomic, retain) AVAssetWriterInput *assetWriterVideoInput2;

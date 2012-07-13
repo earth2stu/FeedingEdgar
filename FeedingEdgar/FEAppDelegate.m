@@ -17,6 +17,9 @@
 @synthesize boyRun = _boyRun;
 @synthesize girlJump = _girlJump;
 @synthesize boyJump = _boyJump;
+@synthesize isWifi;
+//@synthesize track;
+@synthesize backgroundMusicPlayer = _backgroundMusicPlayer;
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
@@ -26,6 +29,52 @@
                   clientKey:@"A1MmNCXcyPUNVMl4yOUYmfJiSljfY5BOwXT0aX5b"];
     
     [PFFacebookUtils initializeWithApplicationId:@"464218030257493"];
+    
+    //NSError *setCategoryError = nil;
+    //[[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:&setCategoryError];
+    
+    
+    
+    [[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayAndRecord error: nil]; 
+    UInt32 audioRouteOverride = kAudioSessionOverrideAudioRoute_Speaker;
+    AudioSessionSetProperty (kAudioSessionProperty_OverrideAudioRoute,sizeof (audioRouteOverride),&audioRouteOverride);
+    
+    // Create audio player with background music
+    NSString *backgroundMusicPath = [[NSBundle mainBundle] pathForResource:@"01 Answers" ofType:@"mp3"];
+    NSURL *backgroundMusicURL = [NSURL fileURLWithPath:backgroundMusicPath];
+    NSError *error;
+    _backgroundMusicPlayer = [[AVAudioPlayer alloc] initWithContentsOfURL:backgroundMusicURL error:&error];
+    [_backgroundMusicPlayer setDelegate:self];  // We need this so we can restart after interruptions
+    [_backgroundMusicPlayer setNumberOfLoops:-1];   // Negative number means loop
+    
+    [_backgroundMusicPlayer setVolume:0.3f];
+    
+    [self performSelector:@selector(playSound) withObject:nil afterDelay:1.0f];
+    
+/*
+        [track setVolume:1];
+    NSString *trackString = [[NSBundle mainBundle] pathForResource:@"01 Answers" ofType:@"mp3"];
+    NSURL *trackURL = [NSURL fileURLWithPath:trackString];
+        
+    NSError *error;
+        
+        track = [[AVAudioPlayer alloc] initWithContentsOfURL:trackURL error:&error];
+        track.numberOfLoops = 0;
+        
+        if (track == nil)
+            NSLog([error description]);
+        else
+            [track setVolume:0.1];
+        
+        [track play];   
+    
+    
+    */
+    
+    //[self performSelector:@selector(playSound) withObject:nil afterDelay:1.0f];
+    
+    //[track play];
+    //[track stop];
     
     
     /*
@@ -48,12 +97,29 @@
     return YES;
 }
 
+/*
+- (void)playSound {
+    
+    NSLog(@"track is playing? %@", self.track);
+    
+    if ([self.track prepareToPlay] && !self.track.isPlaying) {
+        NSLog(@"playing track");
+        [self.track play];
+    } else {
+        [self performSelector:@selector(playSound) withObject:nil afterDelay:1.0f];
+        NSLog(@"trying to play again in one second");
+    }
+}
+*/
+
 - (BOOL)application:(UIApplication *)application handleOpenURL:(NSURL *)url {
+    NSLog(@"handle open URL");
     return [PFFacebookUtils handleOpenURL:url];
 }
 
 - (BOOL)application:(UIApplication *)application openURL:(NSURL *)url
   sourceApplication:(NSString *)sourceApplication annotation:(id)annotation {
+    NSLog(@"application open URL with %@, %@, %@", url, sourceApplication, annotation);
     return [PFFacebookUtils handleOpenURL:url]; 
 }
 
@@ -63,7 +129,7 @@
     }
     
     _boyRun = [NSMutableArray array];
-    for (int i = 0; i <= 26; i++) {
+    for (int i = 0; i <= 24; i++) {
         NSString *fileName = [NSString stringWithFormat:@"Man Run Cycle_%05i.png", i];
         [_boyRun addObject:(id)[[UIImage imageNamed:fileName] CGImage]];
     }
@@ -89,7 +155,7 @@
     }
     
     _girlRun = [NSMutableArray array];
-    for (int i = 0; i <= 25; i++) {
+    for (int i = 0; i <= 24; i++) {
         NSString *fileName = [NSString stringWithFormat:@"Girl Run Cycle_%05i.png", i];
         
         [_girlRun addObject:(id)[[UIImage imageNamed:fileName] CGImage]];
@@ -130,7 +196,7 @@
     NSMutableDictionary * rootObject;
     rootObject = [NSMutableDictionary dictionary];
     
-    [rootObject setValue: [self videos] forKey:@"accounts"];
+    [rootObject setValue: [self videos] forKey:@"videos"];
     [NSKeyedArchiver archiveRootObject: rootObject toFile: path];
 }
 
@@ -187,6 +253,43 @@
      Save data if appropriate.
      See also applicationDidEnterBackground:.
      */
+}
+
+#pragma mark -
+#pragma mark AVAudioPlayer delegate methods
+
+- (void)playSound {
+    [self performSelectorOnMainThread:@selector(tryPlayMusic) withObject:nil waitUntilDone:NO];
+}
+
+- (void) audioPlayerBeginInterruption: (AVAudioPlayer *) player {
+    _backgroundMusicInterrupted = YES;
+    _backgroundMusicPlaying = NO;
+}
+
+- (void) audioPlayerEndInterruption: (AVAudioPlayer *) player {
+    if (_backgroundMusicInterrupted) {
+        [self tryPlayMusic];
+        _backgroundMusicInterrupted = NO;
+    }
+}
+
+- (void)tryPlayMusic {
+    
+    // Check to see if iPod music is already playing
+    UInt32 propertySize = sizeof(_otherMusicIsPlaying);
+    AudioSessionGetProperty(kAudioSessionProperty_OtherAudioIsPlaying, &propertySize, &_otherMusicIsPlaying);
+    
+    // Play the music if no other music is playing and we aren't playing already
+    if (_otherMusicIsPlaying != 1 && !_backgroundMusicPlaying) {
+        [_backgroundMusicPlayer prepareToPlay];
+        //if (soundsEnabled==YES) {
+            [_backgroundMusicPlayer play];
+            _backgroundMusicPlaying = YES;
+            
+            
+        //}
+    }   
 }
 
 @end
